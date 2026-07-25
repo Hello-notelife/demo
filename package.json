@@ -1,0 +1,23 @@
+{
+  "name": "mingri-fugao",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A production-ready business pre-mortem simulator powered by DeepSeek.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && wrangler dev --persist-to=.wrangler/state",
+    "dev": "npm run build && wrangler dev --persist-to=.wrangler/state",
+    "test": "node --test server/*.test.mjs",
+    "check": "node --check worker/index.mjs && node --check worker/store.mjs && node --check server/deepseek.mjs && node --check server/contracts.mjs && node --check src/api.js && node --check src/app.js && node --check src/ui.js",
+    "db:migrate:local": "wrangler d1 migrations apply mingri-fugao --local --persist-to=.wrangler/state",
+    "db:migrate:remote": "wrangler d1 migrations apply mingri-fugao --remote",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "wrangler": "^4.34.0"
+  }
+}

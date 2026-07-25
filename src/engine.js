@@ -188,8 +188,8 @@ window.Engine = (function () {
       },
       {
         id: 'channel',
-        label: '获客断桥',
-        short: '产品做完，路却没修通',
+        label: '罗列利弊',
+        short: '一直在比较，迟迟没有选定一条路',
         damage: clamp(Math.round(channel), 18, 94),
         icon: 'bridge',
         color: 'cyan'
@@ -268,7 +268,7 @@ window.Engine = (function () {
         month: Math.max(2, Math.round(deathMonth * 0.4)),
         title: '只守一条获客路',
         move: '砍掉泛人群，只服务一个最痛的细分场景。',
-        visual: '修复获客断桥',
+        visual: '走出罗列利弊',
         icon: 'bridge',
         riskReduction: biggest.id === 'channel' ? 28 : 18
       },
@@ -280,6 +280,49 @@ window.Engine = (function () {
         visual: '缩小现金深坑',
         icon: 'shield',
         riskReduction: biggest.id === 'cash' ? 30 : 16
+      }
+    ];
+  }
+
+  function buildScenarios(profile, hazards, deathMonth) {
+    var top = hazards[0];
+    var mildest = hazards[hazards.length - 1];
+    var venture = profile.venture;
+    var worstMonth = clamp(Math.round(deathMonth * 0.6), 2, Math.max(2, deathMonth - 1));
+    var bestMonth = clamp(Math.round(deathMonth * 1.9), deathMonth + 2, 60);
+
+    // Probability mass follows how much real evidence exists today: a project with
+    // paying customers genuinely has a fatter best case.
+    var worst = venture.paid > 0 ? 22 : venture.users > 0 ? 30 : 38;
+    var best = venture.paid > 0 ? 30 : venture.users > 0 ? 22 : 15;
+
+    return [
+      {
+        id: 'worst',
+        label: '最坏',
+        deathMonth: worstMonth,
+        cause: top.label,
+        trigger: '如果「' + top.short + '」在前 ' + Math.max(1, Math.round(worstMonth / 2)) + ' 个月内没有被证伪',
+        short: '最致命的假设最先塌，其他问题都来不及暴露。',
+        probability: worst
+      },
+      {
+        id: 'base',
+        label: '基准',
+        deathMonth: deathMonth,
+        cause: top.label,
+        trigger: '如果按现在的节奏继续，既不加速验证也不压缩消耗',
+        short: '风险逐个兑现，现金和信心同时见底。',
+        probability: 100 - worst - best
+      },
+      {
+        id: 'best',
+        label: '最好',
+        deathMonth: bestMonth,
+        cause: mildest.label,
+        trigger: '如果在 ' + venture.runway + ' 个月内拿到可重复的付费证据',
+        short: '主要死因被推后，问题换成更晚才出现的那一个。',
+        probability: best
       }
     ];
   }
@@ -323,6 +366,7 @@ window.Engine = (function () {
       hazards: hazards,
       vitals: vitals,
       deathMonth: deathMonth,
+      scenarios: buildScenarios(profile, hazards, deathMonth),
       timeline: buildTimeline(profile, hazards, deathMonth),
       unknowns: buildUnknowns(profile, hazards),
       turningPoints: buildTurningPoints(profile, hazards, deathMonth),
@@ -377,8 +421,16 @@ window.Engine = (function () {
     };
   }
 
-  function fallback() {
-    return simulate({ answers: DATA.PRESETS[0].answers });
+  // Last resort only. Never substitute a demo preset here: showing someone else's
+  // project as if it were the user's own is worse than a thin result.
+  function fallback(answers) {
+    return simulate({
+      answers: {
+        memory: (answers && answers.memory) || '',
+        venture: (answers && answers.venture) || '',
+        reality: (answers && answers.reality) || ''
+      }
+    });
   }
 
   return {

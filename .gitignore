@@ -1,1 +1,10 @@
+.env
+.env.*
+!.env.example
+.dev.vars
+node_modules/
 .DS_Store
+coverage/
+npm-debug.log*
+dist/
+.wrangler/

@@ -43,6 +43,52 @@ window.UI = (function () {
     }).join('') + '</div>';
   }
 
+  function scenarioBoard(result) {
+    var scenarios = result.scenarios || [];
+    if (scenarios.length !== 3) return '';
+    var horizon = scenarios.reduce(function (max, item) {
+      return Math.max(max, item.deathMonth);
+    }, 1);
+    return '<div class="scenario-board">' +
+      '<div class="scenario-head"><b>三条未来线</b>' +
+        '<small>同一个项目，取决于哪个条件先成立</small></div>' +
+      scenarios.map(function (item) {
+        return '<div class="scenario-row is-' + item.id + '">' +
+          '<div class="scenario-tag"><b>' + esc(item.label) + '</b>' +
+            '<i>' + item.probability + '%</i></div>' +
+          '<div class="scenario-body">' +
+            '<div class="scenario-bar">' +
+              '<i style="width:' + Math.round(item.deathMonth / horizon * 100) + '%"></i>' +
+              '<span>M' + item.deathMonth + '</span></div>' +
+            '<b class="scenario-cause">' + esc(item.cause) + '</b>' +
+            '<p>' + esc(item.short) + '</p>' +
+            '<small>' + esc(item.trigger) + '</small>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  function actionContract(result, next) {
+    var deadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    var topHazard = result.hazards && result.hazards[0] ? result.hazards[0].id : '';
+    var linked = (result.unknowns || []).filter(function (item) {
+      return item.hazard === topHazard;
+    })[0] || (result.unknowns || [])[0] || {};
+    return '<div class="action-contract">' +
+      '<div class="contract-head"><b>行动契约</b><small>ACTION CONTRACT · 7 DAYS</small></div>' +
+      '<div class="contract-grid">' +
+        '<div><span>要做的事</span><b>' + esc(next.nextQuest) + '</b></div>' +
+        '<div><span>截止</span><b>' +
+          (deadline.getMonth() + 1) + ' 月 ' + deadline.getDate() + ' 日</b></div>' +
+        '<div><span>成功判据</span><b>' +
+          esc(linked.proof || '拿到一次真实付款，或一个明确的拒绝理由') + '</b></div>' +
+        '<div><span>停止条件</span><b>到期仍是零证据，就回到抉择页换一条线，不要延长</b></div>' +
+      '</div>' +
+      '<p class="contract-note">没有正确的选择，只有把选择变成正确！</p>' +
+    '</div>';
+  }
+
   function title(ctx) {
     var history = ctx.state.history || [];
     var latest = history[0];
@@ -58,26 +104,26 @@ window.UI = (function () {
       '<section class="product-home">' +
         '<header class="home-greeting">' +
           '<div><span class="home-spark">✦</span><h1>今天，先看坏结局。</h1>' +
-          '<p>让小仆陪你把风险变成下一步。</p></div>' +
+          '<p>让momo陪你把风险变成下一步。</p></div>' +
           '<div class="streak-chip"><span>🔥</span><b>' + Math.max(1, ctx.state.streak || 0) + '</b><small>次连续推演</small></div>' +
         '</header>' +
 
         '<section class="focus-stage">' +
           '<div class="focus-copy">' +
             '<span class="focus-kicker">TODAY’S FOCUS · 商业未来沙盘</span>' +
-            '<h2>在它真的死前，<br>先参加一次葬礼。</h2>' +
+            '<h2>没有正确的选择，<br>只有把选择变成正确！</h2>' +
             '<p>讲述项目，预演死亡，揭开三个盲区，只改一次决定。</p>' +
             '<div class="focus-actions">' +
               '<button class="button primary jumbo" data-action="start">' + runLabel + ' <span>→</span></button>' +
               '<button class="button paper" data-action="demo">试玩真实案例</button>' +
             '</div>' +
             '<div class="trust-strip" aria-label="产品特点">' +
-              '<span>约 3 分钟</span><i></i><span>无需登录</span><i></i><span>本地运行</span>' +
+              '<span>约 3 分钟</span><i></i><span>无需登录</span><i></i><span>DeepSeek 推演</span>' +
             '</div>' +
           '</div>' +
           '<div class="focus-visual" aria-label="项目生存与失败两种未来的像素场景">' +
             '<img src="assets/media/future-island-v2.png" alt="一座同时通向生存和失败的商业浮岛">' +
-            '<span class="focus-risk risk-one">' + Sprites.svg('bridge', 3) + '获客断桥</span>' +
+            '<span class="focus-risk risk-one">' + Sprites.svg('bridge', 3) + '罗列利弊</span>' +
             '<span class="focus-risk risk-two">' + Sprites.svg('grave', 3) + '可能结局</span>' +
           '</div>' +
         '</section>' +
@@ -88,7 +134,7 @@ window.UI = (function () {
           '</h2></div><button class="text-button" data-action="resume">查看路径 →</button></div>' +
           '<div class="progress-track"><i style="width:' + progress + '%"></i></div>' +
           '<div class="progress-steps">' +
-            ['讲述', '葬礼', '盲区', '回溯', '新未来'].map(function (label, index) {
+            ['讲述', '讣告', '盲区', '抉择', '新未来'].map(function (label, index) {
               return '<span class="' + (index < completed ? 'is-done' : index === completed ? 'is-current' : '') +
                 '"><b>' + String(index + 1).padStart(2, '0') + '</b>' + label + '</span>';
             }).join('') +
@@ -97,8 +143,8 @@ window.UI = (function () {
 
         '<section class="home-bottom">' +
           '<div class="buddy-callout">' +
-            '<img src="assets/media/xiaopu-guide-v2.png" alt="小仆像素向导">' +
-            '<div><span>小仆建议</span><h2>' +
+            '<img src="assets/media/xiaopu-guide-v2.png" alt="momo像素向导">' +
+            '<div><span>momo建议</span><h2>' +
               (ctx.state.future ? '别庆祝太久，去完成 7 天任务。'
                 : ctx.state.result ? '讣告已经写好，下一步是找证据。'
                 : '先说真话，不需要写一份漂亮商业计划。') +
@@ -189,7 +235,7 @@ window.UI = (function () {
         '</div>' +
         '<div class="dialog-panel">' +
           '<div class="speaker"><span><img src="assets/media/xiaopu-guide-v2.png" alt=""></span>' +
-            '<b>小仆 · 只问一件事</b></div>' +
+            '<b>momo · 只问一件事</b></div>' +
           '<h1>' + esc(prompt.title) + '</h1>' +
           '<p class="dialog-question">' + esc(prompt.question) + '</p>' +
           '<div class="answer-field">' +
@@ -333,10 +379,22 @@ window.UI = (function () {
     });
     var finish = function () {
       if (ctx.state.screen !== 'sim') return;
-      ctx.state.funeralSeen = true;
-      ctx.save();
-      SFX.fail();
-      ctx.go('funeral');
+      var proceed = function () {
+        if (ctx.state.screen !== 'sim') return;
+        ctx.state.funeralSeen = true;
+        ctx.save();
+        SFX.fail();
+        ctx.go('funeral');
+      };
+      // Hold the run screen until the cloud simulation settles, so the obituary
+      // renders the DeepSeek result rather than the offline placeholder.
+      var pending = ctx.awaitSimulation ? ctx.awaitSimulation() : null;
+      if (pending && typeof pending.then === 'function') {
+        caption.textContent = 'DeepSeek 正在完成推演…';
+        pending.then(proceed, proceed);
+      } else {
+        proceed();
+      }
     };
     var timer = setTimeout(finish, reduceMotion ? 500 : delay * 4.3);
     $('[data-action=skip]').onclick = function () {
@@ -384,7 +442,8 @@ window.UI = (function () {
         '</div>' +
         '<article class="obituary-sheet">' +
           '<div class="obituary-mark">' + Sprites.svg('skull', 4) + '</div>' +
-          '<span class="obituary-kicker">未来商业讣告 · OFFLINE SIMULATION</span>' +
+          '<span class="obituary-kicker">未来商业讣告 · ' +
+            (result.meta && result.meta.mode === 'ai' ? 'DEEPSEEK SIMULATION' : 'OFFLINE SIMULATION') + '</span>' +
           '<h1>' + esc(result.obituary.headline) + '</h1>' +
           '<div class="death-cause">' +
             '<small>首要死因</small><b>' + esc(result.obituary.cause) + '</b><span>' + esc(result.obituary.subhead) + '</span>' +
@@ -392,6 +451,7 @@ window.UI = (function () {
           '<div class="obituary-lines">' +
             result.obituary.body.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') +
           '</div>' +
+          scenarioBoard(result) +
           '<blockquote>“' + esc(result.obituary.epitaph) + '”</blockquote>' +
           '<div class="obituary-facts">' +
             '<span><b>' + result.deathMonth + '</b>个月寿命</span>' +
@@ -520,8 +580,12 @@ window.UI = (function () {
       };
     });
     $('[data-action=rewrite]').onclick = function () {
+      var button = $('[data-action=rewrite]');
       SFX.success();
-      ctx.go('future');
+      if (!ctx.commitRewind) return ctx.go('future');
+      button.disabled = true;
+      button.textContent = '正在重写…';
+      ctx.commitRewind();
     };
   }
 
@@ -557,10 +621,10 @@ window.UI = (function () {
               return '<span><i>' + ['✓', '+', '↑'][index] + '</i>' + esc(item) + '</span>';
             }).join('') +
           '</div>' +
-          '<div class="next-quest"><small>NEXT QUEST · 7 DAYS</small><b>' + esc(next.nextQuest) + '</b></div>' +
+          actionContract(result, next) +
           '<div class="result-actions">' +
             '<button class="button primary" data-action="share">生成结局卡</button>' +
-            '<button class="button ghost" data-action="again">再推演一次</button>' +
+            '<button class="button ghost" data-action="again">带着这个起点再推演 →</button>' +
           '</div>' +
           '<button class="text-button" data-action="rewind">换一个回溯点</button>' +
         '</article>' +
@@ -568,9 +632,13 @@ window.UI = (function () {
 
     $('[data-action=share]').onclick = function () { shareCard(ctx); };
     $('[data-action=again]').onclick = function () {
-      ctx.state.intakeIndex = 1;
-      ctx.save();
-      ctx.go('story');
+      SFX.select();
+      if (ctx.startNextRound) ctx.startNextRound();
+      else {
+        ctx.state.intakeIndex = 1;
+        ctx.save();
+        ctx.go('story');
+      }
     };
     $('[data-action=rewind]').onclick = function () {
       ctx.go('rewind');
@@ -588,11 +656,11 @@ window.UI = (function () {
     },
     {
       id: 'channel',
-      label: '获客断桥',
+      label: '罗列利弊',
       icon: 'bridge',
       tone: 'blue',
-      signal: '第一批用户来自人情，第二批无路可走。',
-      test: '用同一话术触达 30 位陌生目标客户。'
+      signal: '一直在纸上比较利弊，迟迟没有把选择变成行动。',
+      test: '选定一条路，用同一话术触达 30 位陌生目标客户。'
     },
     {
       id: 'cash',
@@ -691,7 +759,7 @@ window.UI = (function () {
               '<p>' + (isOpen ? esc(risk.signal) : '完成推演后解锁') + '</p>' +
             '</button>';
           }).join('') +
-          '<div class="codex-guide"><img src="assets/media/xiaopu-guide-v2.png" alt="小仆像素向导">' +
+          '<div class="codex-guide"><img src="assets/media/xiaopu-guide-v2.png" alt="momo像素向导">' +
             '<div><span>图鉴不是知识库</span><b>它只记录你真正遇见过的风险。</b></div></div>' +
         '</div>' +
       '</section>';
@@ -727,13 +795,13 @@ window.UI = (function () {
       '<section class="utility-page pet-page">' +
         '<div class="pet-stage">' +
           '<div class="pet-sky"><i></i><i></i><i></i></div>' +
-          '<img src="assets/media/xiaopu-guide-v2.png" alt="小仆像素向导">' +
+          '<img src="assets/media/xiaopu-guide-v2.png" alt="momo像素向导">' +
           '<span class="pet-level">LV.' + level + '</span>' +
           '<div class="pet-shadow"></div>' +
         '</div>' +
         '<div class="pet-console">' +
           '<span class="pet-kicker">YOUR PRE-MORTEM COMPANION</span>' +
-          '<h1>小仆</h1><p>它不负责安慰你成功，只负责让你更早看见坏消息。</p>' +
+          '<h1>momo</h1><p>它不负责安慰你成功，只负责让你更早看见坏消息。</p>' +
           '<div class="pet-stats">' +
             '<span>' + Sprites.svg('coin', 3) + '<b>' + ctx.state.coins + '</b><small>证据币</small></span>' +
             '<span>' + Sprites.svg('fire', 3) + '<b>' + Math.max(1, ctx.state.streak || 0) + '</b><small>连续推演</small></span>' +
@@ -750,7 +818,8 @@ window.UI = (function () {
 
     $$('[data-tone]').forEach(function (button) {
       button.onclick = function () {
-        ctx.state.petTone = button.dataset.tone;
+        if (ctx.setPetTone) ctx.setPetTone(button.dataset.tone);
+        else ctx.state.petTone = button.dataset.tone;
         ctx.save();
         SFX.blip();
         pet(ctx);
@@ -794,8 +863,8 @@ window.UI = (function () {
 
     root.innerHTML =
       '<div class="buddy-profile">' +
-        '<div class="buddy-avatar"><img src="assets/media/xiaopu-guide-v2.png" alt="小仆"></div>' +
-        '<div><small>PRE-MORTEM GUIDE</small><b>小仆</b><span>' + toneLabel + '</span></div>' +
+        '<div class="buddy-avatar"><img src="assets/media/xiaopu-guide-v2.png" alt="momo"></div>' +
+        '<div><small>PRE-MORTEM GUIDE</small><b>momo</b><span>' + toneLabel + '</span></div>' +
       '</div>' +
       '<div class="buddy-level"><div><span>推演进度</span><b>' + completed + ' / 5</b></div>' +
         '<div class="buddy-meter"><i style="width:' + (completed / 5 * 100) + '%"></i></div></div>' +
@@ -803,7 +872,7 @@ window.UI = (function () {
         '<span>' + Sprites.svg('coin', 3) + '<b>' + ctx.state.coins + '</b><small>证据币</small></span>' +
         '<span>' + Sprites.svg('fire', 3) + '<b>' + Math.max(1, ctx.state.streak || 0) + '</b><small>连续推演</small></span>' +
       '</div>' +
-      '<div class="buddy-advice"><span>小仆现在看到</span><p>' + esc(advice) + '</p></div>' +
+      '<div class="buddy-advice"><span>momo现在看到</span><p>' + esc(advice) + '</p></div>' +
       '<button class="button primary wide" id="buddy-resume">' + (completed ? '继续推演 →' : '开始推演 →') + '</button>' +
       '<div class="buddy-privacy"><i></i><span>输入只保存在当前浏览器</span></div>';
 
@@ -837,7 +906,7 @@ window.UI = (function () {
     context.fillRect(72, 58, 12, 12);
     context.fillRect(54, 76, 30, 12);
     context.font = '900 30px ui-monospace, "PingFang SC", monospace';
-    context.fillText('明日仆告', 104, 86);
+    context.fillText('明日讣告', 104, 86);
     context.fillStyle = '#766f69';
     context.font = '600 18px ui-monospace, "PingFang SC", monospace';
     context.fillText('PROJECT PRE-MORTEM · #' + String(Date.now()).slice(-6), 104, 119);
@@ -896,7 +965,7 @@ window.UI = (function () {
     wrapCanvasText(context, next.nextQuest, 78, 1104, 720, 28);
 
     var url = canvas.toDataURL('image/png');
-    ctx.modal('你的新未来', '<img class="share-image" src="' + url + '" alt="明日仆告新未来分享卡">' +
+    ctx.modal('你的新未来', '<img class="share-image" src="' + url + '" alt="明日讣告新未来分享卡">' +
       '<div class="modal-actions"><a class="button primary" download="mingri-new-future.png" href="' + url + '">下载 PNG</a>' +
       '<button class="button ghost" id="share-close">留在这里</button></div>');
     $('#share-close').onclick = ctx.closeModal;

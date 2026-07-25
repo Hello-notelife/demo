@@ -5,9 +5,9 @@ window.App = (function () {
   var PRODUCT_VIEWS = ['title', 'archive', 'codex', 'pet'];
   var LABELS = {
     story: '讲述',
-    funeral: '葬礼',
+    funeral: '讣告',
     unknowns: '盲区',
-    rewind: '回溯',
+    rewind: '抉择',
     future: '新未来'
   };
 
@@ -26,8 +26,22 @@ window.App = (function () {
     coins: 0,
     streak: 0,
     lastRunId: '',
-    petTone: 'direct'
+    petTone: 'direct',
+    cloudRunId: '',
+    cloudAccount: false
   };
+
+  var cloud = {
+    checked: false,
+    online: false,
+    configured: false,
+    database: false,
+    liveEvidence: false,
+    models: null
+  };
+  var healthPromise = null;
+  var pendingSimulation = null;
+  var pendingRewrite = null;
 
   function todayKey() {
     var now = new Date();
@@ -52,7 +66,10 @@ window.App = (function () {
       coins: state.coins,
       streak: state.streak,
       lastRunId: state.lastRunId,
-      petTone: state.petTone
+      petTone: state.petTone,
+      cloudRunId: state.cloudRunId,
+      result: state.result,
+      future: state.future
     };
   }
 
@@ -88,11 +105,20 @@ window.App = (function () {
       if (typeof stored.streak === 'number') state.streak = stored.streak;
       if (stored.lastRunId) state.lastRunId = stored.lastRunId;
       if (stored.petTone) state.petTone = stored.petTone;
+      if (stored.cloudRunId) state.cloudRunId = stored.cloudRunId;
 
       var complete = state.answers.memory && state.answers.venture && state.answers.reality;
       if (complete) {
-        state.result = safeSimulate();
-        if (state.rewindPoint) state.future = Engine.rewrite(state.result, state.rewindPoint);
+        // Prefer the stored run so a reload keeps the DeepSeek output instead of
+        // silently downgrading to the offline rules.
+        state.result = stored.result && stored.result.hazards && stored.result.hazards.length
+          ? stored.result
+          : safeSimulate();
+        if (state.rewindPoint) {
+          state.future = stored.future && stored.future.point
+            ? stored.future
+            : Engine.rewrite(state.result, state.rewindPoint);
+        }
       }
 
       state.screen = stored.screen && UI.screens[stored.screen] ? stored.screen : 'title';
@@ -109,7 +135,7 @@ window.App = (function () {
       return Engine.simulate(state);
     } catch (error) {
       toast('推演引擎已切换到离线保底案例');
-      return Engine.fallback();
+      return Engine.fallback(state.answers);
     }
   }
 
@@ -125,6 +151,175 @@ window.App = (function () {
 
   function announce(message) {
     document.getElementById('announcer').textContent = message;
+  }
+
+  function hasApi() {
+    return typeof window.SimulationAPI !== 'undefined';
+  }
+
+  function cloudReady() {
+    return cloud.online && cloud.configured && cloud.database;
+  }
+
+  function runtimeLabel() {
+    if (!cloud.checked) {
+      return { text: '正在检测服务', detail: 'ANONYMOUS · CLOUDFLARE D1', tone: 'pending' };
+    }
+    if (cloudReady()) {
+      var model = cloud.models && cloud.models.fast ? cloud.models.fast : 'deepseek';
+      return {
+        text: 'DeepSeek 已连接',
+        detail: model.toUpperCase() + ' · D1' + (cloud.liveEvidence ? ' · 实时证据' : ''),
+        tone: 'live'
+      };
+    }
+    if (cloud.online && !cloud.configured) {
+      return { text: '未配置 API 密钥', detail: '在 .dev.vars 填入 DEEPSEEK_API_KEY', tone: 'offline' };
+    }
+    if (cloud.online && !cloud.database) {
+      return { text: '数据库未就绪', detail: '运行 npm run db:migrate:local', tone: 'offline' };
+    }
+    return { text: '离线规则引擎', detail: 'LOCAL RULES ONLY', tone: 'offline' };
+  }
+
+  function renderRuntime() {
+    var info = runtimeLabel();
+    var rail = document.getElementById('rail-runtime');
+    if (rail) {
+      rail.innerHTML = '<i></i> ' + UI.esc(info.text);
+      rail.dataset.tone = info.tone;
+    }
+    var detail = document.getElementById('rail-runtime-detail');
+    if (detail) detail.textContent = info.detail;
+    var badge = document.getElementById('offline-badge');
+    if (badge) {
+      badge.textContent = info.tone === 'live' ? 'AI 在线'
+        : info.tone === 'pending' ? '正在连接'
+          : '离线模式';
+      badge.dataset.tone = info.tone;
+    }
+  }
+
+  function applyAccount(account) {
+    if (!account) return;
+    if (typeof account.coins === 'number') state.coins = account.coins;
+    if (typeof account.streak === 'number') state.streak = account.streak;
+    if (account.petTone) state.petTone = account.petTone;
+    state.cloudAccount = true;
+    save();
+  }
+
+  function checkHealth() {
+    if (!hasApi()) {
+      cloud.checked = true;
+      renderRuntime();
+      return Promise.resolve(cloud);
+    }
+    healthPromise = SimulationAPI.health().then(function (info) {
+      cloud.online = true;
+      cloud.configured = !!info.configured;
+      cloud.database = !!info.database;
+      cloud.liveEvidence = !!info.liveEvidence;
+      cloud.models = info.models || null;
+      cloud.checked = true;
+      renderRuntime();
+      return cloud;
+    }).catch(function () {
+      cloud.online = false;
+      cloud.checked = true;
+      renderRuntime();
+      return cloud;
+    });
+    return healthPromise;
+  }
+
+  function whenChecked() {
+    if (cloud.checked) return Promise.resolve(cloud);
+    return healthPromise || checkHealth();
+  }
+
+  function hydrateCloudState() {
+    if (!cloudReady()) return Promise.resolve(false);
+    return SimulationAPI.cloudState().then(function (payload) {
+      applyAccount(payload.account);
+      var history = SimulationAPI.cloudRunsToHistory(payload.runs);
+      if (history.length) state.history = history.slice(0, 8);
+      save();
+      if (UI.screens[state.screen]) UI.screens[state.screen](ctx);
+      renderChrome();
+      return true;
+    }).catch(function () {
+      return false;
+    });
+  }
+
+  function requestCloudSimulation(base) {
+    return whenChecked().then(function () {
+      if (!cloudReady()) return false;
+      return SimulationAPI.simulate(state.answers, 'fast').then(function (response) {
+        state.result = SimulationAPI.mergeSimulation(base, response);
+        state.cloudRunId = response.runId || '';
+        save();
+        return true;
+      });
+    }).catch(function (error) {
+      state.cloudRunId = '';
+      state.result = base;
+      save();
+      toast(error && error.message ? error.message : '云端推演失败，已使用离线规则');
+      return false;
+    });
+  }
+
+  function requestCloudRewrite(base) {
+    if (!cloudReady() || !state.cloudRunId || !state.result) return Promise.resolve(false);
+    var point = base.point;
+    return SimulationAPI.rewrite({
+      runId: state.cloudRunId,
+      answers: state.answers,
+      selectedPoint: {
+        id: point.id,
+        month: point.month,
+        title: point.title,
+        move: point.move,
+        visual: point.visual,
+        riskReduction: point.riskReduction
+      },
+      original: {
+        deathMonth: state.result.deathMonth,
+        vitals: state.result.vitals,
+        obituary: state.result.obituary,
+        hazards: state.result.hazards.map(function (item) {
+          return { id: item.id, label: item.label, damage: item.damage };
+        })
+      }
+    }).then(function (response) {
+      if (state.rewindPoint !== point.id) return false;
+      state.future = SimulationAPI.mergeRewrite(base, response);
+      applyAccount(response.account);
+      save();
+      return true;
+    }).catch(function (error) {
+      toast(error && error.message ? error.message : '云端重写失败，已使用离线规则');
+      return false;
+    });
+  }
+
+  function awaitSimulation() {
+    return pendingSimulation || Promise.resolve(false);
+  }
+
+  function commitRewind() {
+    var pending = pendingRewrite || Promise.resolve(false);
+    return pending.then(function () { go('future'); }, function () { go('future'); });
+  }
+
+  function setPetTone(tone) {
+    state.petTone = tone;
+    save();
+    if (cloudReady()) {
+      SimulationAPI.savePreferences({ petTone: tone }).catch(function () {});
+    }
   }
 
   var lastFocus = null;
@@ -195,9 +390,13 @@ window.App = (function () {
     ].join('|');
     if (state.lastRunId === signature) return;
 
-    var previousDay = state.history.length ? state.history[0].day : '';
-    state.streak = previousDay && previousDay !== todayKey() ? state.streak + 1 : Math.max(1, state.streak);
-    state.coins += 40 + state.revealedUnknowns.length * 10;
+    // The worker is authoritative for coins and streak once a run completes in D1,
+    // so only fall back to local scoring while running offline.
+    if (!state.cloudAccount) {
+      var previousDay = state.history.length ? state.history[0].day : '';
+      state.streak = previousDay && previousDay !== todayKey() ? state.streak + 1 : Math.max(1, state.streak);
+      state.coins += 40 + state.revealedUnknowns.length * 10;
+    }
     state.lastRunId = signature;
     state.history.unshift({
       id: String(Date.now()),
@@ -250,13 +449,17 @@ window.App = (function () {
       modal('这次不进入推演', '<p class="modal-message">' + UI.esc(safety.message) + '</p>');
       return false;
     }
-    state.result = safeSimulate();
+    var base = safeSimulate();
+    state.result = base;
     state.revealedUnknowns = [];
     state.rewindPoint = null;
     state.future = null;
     state.funeralSeen = false;
     state.lastRunId = '';
+    state.cloudRunId = '';
+    pendingRewrite = null;
     save();
+    pendingSimulation = requestCloudSimulation(base);
     SFX.fork();
     go('sim');
     return true;
@@ -264,9 +467,33 @@ window.App = (function () {
 
   function selectRewind(pointId) {
     state.rewindPoint = pointId;
-    state.future = Engine.rewrite(state.result, pointId);
+    var base = Engine.rewrite(state.result, pointId);
+    state.future = base;
     save();
+    pendingRewrite = requestCloudRewrite(base);
     renderChrome();
+  }
+
+  // Closes the loop: the next round starts from where this one ended, so the
+  // 7-day contract becomes the input of the following pre-mortem.
+  function startNextRound() {
+    var next = state.future;
+    if (next && next.point) {
+      state.answers.reality = '上一轮我选择了「' + next.point.title + '」，7 天任务是：'
+        + next.nextQuest + ' 目前进展：';
+    }
+    state.intakeIndex = 2;
+    state.result = null;
+    state.revealedUnknowns = [];
+    state.rewindPoint = null;
+    state.future = null;
+    state.funeralSeen = false;
+    state.lastRunId = '';
+    state.cloudRunId = '';
+    pendingSimulation = null;
+    pendingRewrite = null;
+    save();
+    go('story');
   }
 
   function revealUnknown(id) {
@@ -337,7 +564,7 @@ window.App = (function () {
       '<div>' + Sprites.svg('grave', 3) + '<span><b>墓碑</b>第一次结局</span></div>' +
       '<div>' + Sprites.svg('block', 3) + '<span><b>问号砖</b>3 个未知盲区</span></div>' +
       '<div>' + Sprites.svg('coin', 3) + '<span><b>回溯币</b>只能改 1 次决定</span></div>' +
-      '</div><p class="modal-note">小仆只解释可控的商业风险。所有输入与推演仅保存在当前浏览器，离线规则始终可用。</p>');
+      '</div><p class="modal-note">momo只解释可控的商业风险。所有输入与推演仅保存在当前浏览器，离线规则始终可用。</p>');
   }
 
   function navigateProductView(view) {
@@ -376,7 +603,12 @@ window.App = (function () {
     revealUnknown: revealUnknown,
     selectRewind: selectRewind,
     resumeTarget: resumeTarget,
-    recordRun: recordRun
+    recordRun: recordRun,
+    awaitSimulation: awaitSimulation,
+    commitRewind: commitRewind,
+    startNextRound: startNextRound,
+    setPetTone: setPetTone,
+    runtime: function () { return cloud; }
   };
 
   function init() {
@@ -392,6 +624,8 @@ window.App = (function () {
     });
     document.addEventListener('keydown', handleKeys);
     go(state.screen);
+    renderRuntime();
+    checkHealth().then(hydrateCloudState);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -2383,3 +2383,221 @@ body[data-product-view="simulation"] .product-shell {
     animation: none;
   }
 }
+
+/* ── 三条未来线：最坏 / 基准 / 最好 ───────────────────────────── */
+
+.scenario-board {
+  margin: 18px 0 4px;
+  border: 2px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pixel-shadow);
+  overflow: hidden;
+}
+
+.scenario-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--line-strong);
+  background: var(--surface-2);
+}
+
+.scenario-head b {
+  font-size: 15px;
+  letter-spacing: .02em;
+}
+
+.scenario-head small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.scenario-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.scenario-row:first-of-type {
+  border-top: 0;
+}
+
+.scenario-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 2px solid var(--line-strong);
+  border-radius: 3px;
+  text-align: center;
+}
+
+.scenario-tag b {
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.scenario-tag i {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.scenario-row.is-worst .scenario-tag { background: var(--coral-soft); }
+.scenario-row.is-base  .scenario-tag { background: var(--yellow-soft); }
+.scenario-row.is-best  .scenario-tag { background: var(--green-soft); }
+
+.scenario-body {
+  min-width: 0;
+}
+
+.scenario-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 14px;
+  margin-bottom: 7px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--surface-2);
+}
+
+.scenario-bar > i {
+  display: block;
+  height: 100%;
+  border-right: 2px solid var(--line-strong);
+}
+
+.scenario-row.is-worst .scenario-bar > i { background: var(--coral); }
+.scenario-row.is-base  .scenario-bar > i { background: var(--amber); }
+.scenario-row.is-best  .scenario-bar > i { background: var(--lime); }
+
+.scenario-bar > span {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.scenario-cause {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.scenario-body p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.scenario-body small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ── 行动契约 ─────────────────────────────────────────────── */
+
+.action-contract {
+  margin: 16px 0 14px;
+  border: 2px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--purple-soft);
+  box-shadow: var(--pixel-shadow);
+  overflow: hidden;
+}
+
+.contract-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 9px 14px;
+  border-bottom: 2px solid var(--line-strong);
+  background: var(--pink);
+  color: #fffdf8;
+}
+
+.contract-head b { font-size: 15px; }
+
+.contract-head small {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  opacity: .82;
+}
+
+.contract-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.contract-grid > div {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(27, 23, 32, .16);
+  border-right: 1px solid rgba(27, 23, 32, .16);
+}
+
+.contract-grid > div:nth-child(-n+2) { border-top: 0; }
+.contract-grid > div:nth-child(2n)   { border-right: 0; }
+
+.contract-grid span {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.contract-grid b {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.contract-note {
+  margin: 0;
+  padding: 9px 14px;
+  border-top: 2px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .scenario-row {
+    grid-template-columns: 60px 1fr;
+    gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .contract-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contract-grid > div {
+    border-right: 0;
+  }
+
+  .contract-grid > div:nth-child(2) {
+    border-top: 1px solid rgba(27, 23, 32, .16);
+  }
+}
