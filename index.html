@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>明日仆告 · 在项目真正失败前，先参加一次它的葬礼</title>
+  <meta name="description" content="把你的过去与商业想法说给我听。明日仆告会模拟项目的死亡、揭示盲区，并让你改写一个关键决定。">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#fbf7ed">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23fbf7ed'/%3E%3Crect x='3' y='2' width='10' height='2' fill='%231b1720'/%3E%3Crect x='2' y='4' width='12' height='8' fill='%23fffaf0'/%3E%3Crect x='4' y='6' width='3' height='3' fill='%2358c96b'/%3E%3Crect x='9' y='6' width='3' height='3' fill='%2359bde8'/%3E%3Crect x='5' y='11' width='6' height='2' fill='%23ffd43b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/product-v2.css">
+</head>
+<body>
+  <a class="skip-link" href="#screen">跳到主要内容</a>
+
+  <div class="product-shell">
+    <aside class="product-rail" aria-label="产品导航">
+      <button class="rail-brand" data-home aria-label="返回明日仆告首页">
+        <span class="rail-logo" aria-hidden="true">卜</span>
+        <span><b>明日仆告</b><small>FUTURE PRE-MORTEM</small></span>
+      </button>
+
+      <nav class="product-nav" aria-label="主要功能">
+        <button data-view="title"><span aria-hidden="true">⌂</span><b>今日</b></button>
+        <button data-view="run"><span aria-hidden="true">▶</span><b>推演</b></button>
+        <button data-view="archive"><span aria-hidden="true">▣</span><b>档案</b></button>
+        <button data-view="codex"><span aria-hidden="true">◆</span><b>图鉴</b></button>
+        <button data-view="pet"><span aria-hidden="true">✦</span><b>小仆</b></button>
+      </nav>
+
+      <div class="rail-buddy">
+        <img src="assets/media/xiaopu-guide-v2.png" alt="" width="96" height="96">
+        <div><b>小仆在线</b><span id="rail-buddy-copy">我负责先把坏结局找出来。</span></div>
+      </div>
+
+      <div class="rail-foot">
+        <span><i></i> 本地运行</span>
+        <small>NO LOGIN · NO CLOUD</small>
+      </div>
+    </aside>
+
+    <section class="product-workspace">
+      <header id="hud" class="hud" hidden>
+        <button class="brand" data-home aria-label="返回明日仆告首页">
+          <canvas id="hud-logo" width="16" height="16" aria-hidden="true"></canvas>
+          <span>明日仆告</span>
+        </button>
+        <nav id="steps" class="level-progress" aria-label="推演进度"></nav>
+        <div class="hud-actions">
+          <span id="offline-badge" class="offline-badge">离线沙盘</span>
+          <button id="btn-sound" class="hud-button" aria-label="开启音效" aria-pressed="false">♪</button>
+          <button id="btn-help" class="hud-button" aria-label="查看玩法说明">?</button>
+          <button id="btn-reset" class="hud-button" aria-label="重新开始">↺</button>
+        </div>
+      </header>
+
+      <main id="screen" class="screen" tabindex="-1"></main>
+    </section>
+
+    <aside id="buddy-rail" class="buddy-rail" aria-label="小仆状态"></aside>
+  </div>
+
+  <nav class="mobile-dock" aria-label="移动端主要功能">
+    <button data-view="title"><span aria-hidden="true">⌂</span><b>今日</b></button>
+    <button data-view="run"><span aria-hidden="true">▶</span><b>推演</b></button>
+    <button data-view="archive"><span aria-hidden="true">▣</span><b>档案</b></button>
+    <button data-view="codex"><span aria-hidden="true">◆</span><b>图鉴</b></button>
+    <button data-view="pet"><span aria-hidden="true">✦</span><b>小仆</b></button>
+  </nav>
+
+  <div id="modal" class="modal" hidden>
+    <button class="modal-mask" data-close aria-label="关闭弹窗"></button>
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-head">
+        <h2 id="modal-title">标题</h2>
+        <button class="hud-button" data-close aria-label="关闭">×</button>
+      </header>
+      <div id="modal-body" class="modal-body"></div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="announcer" class="sr-only" aria-live="polite"></div>
+
+  <script src="src/sfx.js"></script>
+  <script src="src/sprites.js"></script>
+  <script src="src/data.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
