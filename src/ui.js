@@ -115,7 +115,6 @@ window.UI = (function () {
             '<p>讲述项目，预演死亡，揭开三个盲区，只改一次决定。</p>' +
             '<div class="focus-actions">' +
               '<button class="button primary jumbo" data-action="start">' + runLabel + ' <span>→</span></button>' +
-              '<button class="button paper" data-action="demo">试玩真实案例</button>' +
             '</div>' +
             '<div class="trust-strip" aria-label="产品特点">' +
               '<span>约 3 分钟</span><i></i><span>无需登录</span><i></i><span>DeepSeek 推演</span>' +
@@ -171,32 +170,12 @@ window.UI = (function () {
       ctx.save();
       ctx.go(completed ? ctx.resumeTarget() : 'story');
     };
-    $('[data-action=demo]').onclick = function () {
-      SFX.select();
-      presetPicker(ctx);
-    };
     $('[data-action=resume]').onclick = function () {
       ctx.go(ctx.resumeTarget());
     };
     $('[data-action=archive]').onclick = function () {
       ctx.go('archive');
     };
-  }
-
-  function presetPicker(ctx) {
-    ctx.modal('选择一个可玩的项目', '<div class="preset-list">' +
-      DATA.PRESETS.map(function (preset, index) {
-        return '<button class="preset-choice" data-preset="' + index + '">' +
-          '<span class="preset-avatar">' + Sprites.svg('hero', 4, preset.color) + '</span>' +
-          '<span><b>' + esc(preset.name) + '</b><small>' + esc(preset.label) + '</small></span>' +
-          '<i>PLAY →</i></button>';
-      }).join('') + '</div>');
-    $$('[data-preset]').forEach(function (button) {
-      button.onclick = function () {
-        ctx.closeModal();
-        ctx.loadPreset(Number(button.dataset.preset));
-      };
-    });
   }
 
   function memoryPath(profile, activeIndex, accent) {
@@ -249,8 +228,12 @@ window.UI = (function () {
           '<div class="dialog-actions">' +
             '<button class="button ghost" data-action="back">←</button>' +
             '<span>' + (index + 1) + ' / 3</span>' +
-            '<button class="button primary" data-action="next">' + (index === 2 ? '让未来发生 →' : '继续 →') + '</button>' +
+            '<button class="button primary" data-action="next">' +
+              (index === 0 ? '开始推演 →' : index === 2 ? '开始推演 →' : '继续 →') + '</button>' +
           '</div>' +
+          (index === 0
+            ? '<button class="text-button" data-action="more">先补充事实与在意的事（可选）</button>'
+            : '<button class="text-button" data-action="skip">跳过这一步，直接推演 →</button>') +
         '</div>' +
       '</section>';
 
@@ -285,17 +268,37 @@ window.UI = (function () {
         story(ctx);
       }
     };
+    var more = $('[data-action=more]');
+    if (more) {
+      more.onclick = function () {
+        ctx.state.answers[prompt.key] = textarea.value.trim();
+        ctx.state.intakeIndex = 1;
+        ctx.save();
+        SFX.blip();
+        story(ctx);
+      };
+    }
+    var skip = $('[data-action=skip]');
+    if (skip) {
+      skip.onclick = function () {
+        ctx.state.answers[prompt.key] = textarea.value.trim();
+        ctx.save();
+        SFX.select();
+        ctx.runSimulation();
+      };
+    }
     $('[data-action=next]').onclick = function () {
       var value = textarea.value.trim();
-      if (value.length < 12) {
-        ctx.toast('再多说一点，让地图有东西可画');
+      // Only the first step is required — facts and values are optional context.
+      if (index === 0 && value.length < 12) {
+        ctx.toast('再多说一点，把真正困住你的地方说清楚');
         textarea.focus();
         SFX.warn();
         return;
       }
       ctx.state.answers[prompt.key] = value;
-      if (index < 2) {
-        ctx.state.intakeIndex = index + 1;
+      if (index === 1) {
+        ctx.state.intakeIndex = 2;
         ctx.save();
         SFX.select();
         story(ctx);

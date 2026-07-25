@@ -2601,3 +2601,29 @@ body[data-product-view="simulation"] .product-shell {
     border-top: 1px solid rgba(27, 23, 32, .16);
   }
 }
+
+/* ── 盲区页在深色洞穴背景上：强制浅色文字 ─────────────────────
+   style.css 的这些规则用 var(--ink)，在深色主题下是浅色；
+   本主题把 --ink 改成了近黑色，于是变成深底深字，看不见。 */
+
+.unknown-head h1 {
+  color: #fffdf8;
+  text-shadow: 3px 3px 0 rgba(3, 9, 13, .55);
+}
+
+.unknown-head .world-label {
+  color: #ffe9b8;
+}
+
+.mystery-block b {
+  color: #fffdf8;
+  background: rgba(3, 9, 13, .86);
+  border: 1px solid rgba(255, 253, 248, .28);
+  border-radius: 3px;
+}
+
+.mystery-block.is-open b {
+  color: #1b1720;
+  background: var(--amber);
+  border-color: var(--line-strong);
+}

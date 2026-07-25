@@ -120,8 +120,10 @@ window.Engine = (function () {
   }
 
   function buildProfile(answers) {
-    var reality = answers.reality || '';
-    var venture = answers.venture || '';
+    // The intake is now one required problem statement plus two optional
+    // context fields; map them onto the existing risk heuristics.
+    var reality = (answers.facts || '') + ' ' + (answers.problem || '');
+    var venture = answers.problem || '';
     var stage = extractStage(reality);
     var cash = findMoney(reality, '手里|资金|预算|现金|投入|有');
     var burn = findMoney(reality, '每月|月均|月烧|固定成本|成本约|花');
@@ -137,9 +139,9 @@ window.Engine = (function () {
 
     return {
       memory: {
-        nodes: buildMemoryNodes(answers.memory),
-        strengths: extractStrengths(answers.memory),
-        raw: answers.memory
+        nodes: buildMemoryNodes(answers.cares || answers.problem),
+        strengths: extractStrengths(answers.cares || answers.problem),
+        raw: answers.cares || answers.problem || ''
       },
       venture: {
         name: extractName(venture),
@@ -346,7 +348,7 @@ window.Engine = (function () {
     var averageRisk = hazards.reduce(function (sum, item) { return sum + item.damage; }, 0) / hazards.length;
     var evidenceBonus = profile.venture.users > 0 ? 1.5 : 0;
     if (profile.venture.paid > 0) evidenceBonus += 3;
-    var jitter = (hash(answers.memory + answers.venture + answers.reality) % 3) - 1;
+    var jitter = (hash(answers.problem + answers.facts + answers.cares) % 3) - 1;
     var deathMonth = clamp(
       Math.round(3 + profile.venture.runway * 0.72 + evidenceBonus - averageRisk / 23 + jitter),
       3,
@@ -426,9 +428,9 @@ window.Engine = (function () {
   function fallback(answers) {
     return simulate({
       answers: {
-        memory: (answers && answers.memory) || '',
-        venture: (answers && answers.venture) || '',
-        reality: (answers && answers.reality) || ''
+        problem: (answers && answers.problem) || '',
+        facts: (answers && answers.facts) || '',
+        cares: (answers && answers.cares) || ''
       }
     });
   }

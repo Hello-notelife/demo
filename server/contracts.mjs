@@ -218,15 +218,17 @@ export function normalizeRewrite(value) {
 
 export function normalizeAnswers(value) {
   if (!isObject(value)) throw new Error('Answers must be an object');
-  const answers = {
-    memory: requireText(value.memory, 'answers.memory', 4000),
-    venture: requireText(value.venture, 'answers.venture', 4000),
-    reality: requireText(value.reality, 'answers.reality', 4000)
-  };
-  if (Object.values(answers).some((item) => item.length < 12)) {
-    throw new Error('Each answer must contain at least 12 characters');
+  // Only the problem statement is required; facts and values are optional
+  // context the user may not have yet.
+  const problem = requireText(value.problem, 'answers.problem', 4000);
+  if (problem.length < 12) {
+    throw new Error('Describe the decision in at least 12 characters');
   }
-  return answers;
+  return {
+    problem,
+    facts: cleanText(value.facts, 4000),
+    cares: cleanText(value.cares, 4000)
+  };
 }
 
 export function normalizeMode(value) {

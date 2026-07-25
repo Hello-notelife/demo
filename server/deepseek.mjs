@@ -68,6 +68,14 @@ function rewritePrompt(payload) {
   ].join('\n');
 }
 
+export async function searchEvidence(config, query, fetchImpl) {
+  return searchIndustryContext(
+    config,
+    { venture: query, reality: '' },
+    fetchImpl
+  );
+}
+
 async function searchIndustryContext(config, answers, fetchImpl) {
   if (!config.tavilyApiKey) return [];
   // Pull the venture and its stated constraints into the query so the evidence is
@@ -111,7 +119,7 @@ async function searchIndustryContext(config, answers, fetchImpl) {
   })));
 }
 
-async function requestJson(config, model, prompt, fetchImpl) {
+export async function requestJson(config, model, prompt, fetchImpl) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

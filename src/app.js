@@ -13,7 +13,7 @@ window.App = (function () {
 
   var state = {
     screen: 'title',
-    answers: { memory: '', venture: '', reality: '' },
+    answers: { problem: '', facts: '', cares: '' },
     intakeIndex: 0,
     result: null,
     revealedUnknowns: [],
@@ -107,7 +107,7 @@ window.App = (function () {
       if (stored.petTone) state.petTone = stored.petTone;
       if (stored.cloudRunId) state.cloudRunId = stored.cloudRunId;
 
-      var complete = state.answers.memory && state.answers.venture && state.answers.reality;
+      var complete = !!state.answers.problem;
       if (complete) {
         // Prefer the stored run so a reload keeps the DeepSeek output instead of
         // silently downgrading to the offline rules.
@@ -442,7 +442,7 @@ window.App = (function () {
   }
 
   function runSimulation() {
-    var allText = state.answers.memory + ' ' + state.answers.venture + ' ' + state.answers.reality;
+    var allText = state.answers.problem + ' ' + state.answers.facts + ' ' + state.answers.cares;
     var safety = DATA.checkSafety(allText);
     if (!safety.allowed) {
       SFX.warn();
@@ -479,7 +479,7 @@ window.App = (function () {
   function startNextRound() {
     var next = state.future;
     if (next && next.point) {
-      state.answers.reality = '上一轮我选择了「' + next.point.title + '」，7 天任务是：'
+      state.answers.facts = '上一轮我选择了「' + next.point.title + '」，7 天任务是：'
         + next.nextQuest + ' 目前进展：';
     }
     state.intakeIndex = 2;
@@ -504,24 +504,8 @@ window.App = (function () {
     }
   }
 
-  function loadPreset(index) {
-    var preset = DATA.PRESETS[index] || DATA.PRESETS[0];
-    state.answers = JSON.parse(JSON.stringify(preset.answers));
-    state.intakeIndex = 0;
-    state.avatarAccent = preset.color;
-    state.result = null;
-    state.revealedUnknowns = [];
-    state.rewindPoint = null;
-    state.future = null;
-    state.funeralSeen = false;
-    state.lastRunId = '';
-    save();
-    SFX.select();
-    runSimulation();
-  }
-
   function reset() {
-    state.answers = { memory: '', venture: '', reality: '' };
+    state.answers = { problem: '', facts: '', cares: '' };
     state.intakeIndex = 0;
     state.result = null;
     state.revealedUnknowns = [];
@@ -599,7 +583,6 @@ window.App = (function () {
     modal: modal,
     closeModal: closeModal,
     runSimulation: runSimulation,
-    loadPreset: loadPreset,
     revealUnknown: revealUnknown,
     selectRewind: selectRewind,
     resumeTarget: resumeTarget,
